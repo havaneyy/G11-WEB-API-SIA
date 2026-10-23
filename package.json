@@ -1,0 +1,17 @@
+{
+  "name": "codecraft-shop-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cypress E2E tests for CodeCraft Shop",
+  "scripts": {
+    "test:e2e": "cypress run",
+    "cy:open": "cypress open",
+    "cy:run": "cypress run"
+  },
+  "devDependencies": {
+    "cypress": "^13.17.0"
+  },
+  "dependencies": {
+    "isomorphic-git": "^1.44.3"
+  }
+}

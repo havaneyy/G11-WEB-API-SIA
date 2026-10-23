@@ -1,0 +1,10 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Direct routes for Cypress E2E tests and cleaner URLs
+    RewriteRule ^checkout/?$ checkout.php [L,QSA]
+    RewriteRule ^orders/?$ orders.php [L,QSA]
+    RewriteRule ^orders/([0-9]+)/?$ orders.php?id=$1 [L,QSA]
+    RewriteRule ^orders/([0-9]+)/success/?$ success.php?order_id=$1 [L,QSA]
+    RewriteRule ^orders/([0-9]+)/cancel/?$ cancel.php?order_id=$1 [L,QSA]
+</IfModule>

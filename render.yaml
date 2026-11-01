@@ -19,8 +19,6 @@ services:
         sync: false
       - key: PAYMONGO_SECRET_KEY
         sync: false
-      - key: PAYMONGO_PUBLIC_KEY
-        sync: false
       - key: APP_BASE_URL
         sync: false
 

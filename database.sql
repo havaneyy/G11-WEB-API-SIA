@@ -2,8 +2,8 @@
 -- Integrated with Escrow & Shopee-style Guarantee System
 -- Minor units (centavos) used for all monetary values (integers, no floats)
 
-CREATE DATABASE IF NOT EXISTS `codecraft_shop` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `codecraft_shop`;
+-- CREATE DATABASE IF NOT EXISTS `codecraft_shop` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- USE `codecraft_shop`;
 
 -- 1. Users Table
 CREATE TABLE IF NOT EXISTS `users` (

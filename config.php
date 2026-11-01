@@ -44,7 +44,7 @@ define('DB_SSL_CA', getenv('DB_SSL_CA') ?: null);
 // PayMongo API Keys (Admin Central Gateway)
 // Get your keys from PayMongo Dashboard: Developers -> API Keys
 define('PAYMONGO_SECRET_KEY', getenv('PAYMONGO_SECRET_KEY') ?: 'REPLACE_WITH_YOUR_PAYMONGO_SECRET_KEY');
-define('PAYMONGO_PUBLIC_KEY', getenv('PAYMONGO_PUBLIC_KEY') ?: 'REPLACE_WITH_YOUR_PAYMONGO_PUBLIC_KEY');
+define('PAYMONGO_PUBLIC_KEY', getenv('PAYMONGO_PUBLIC_KEY') ?: '');
 define('ADMIN_PASSWORD', getenv('ADMIN_PASSWORD') ?: 'admin123');
 
 // Detect Base URL (support cloud root domain or local subdirectory)
@@ -71,6 +71,45 @@ if (getenv('APP_BASE_URL')) {
 
 define('DEFAULT_AVATAR_URL', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsYYYmIOuieWvw2LUapfA7Catq3e-NyzpWMPjVoZ32pQ&s=10');
 
+function ensure_database_schema(PDO $pdo): void {
+    try {
+        $pdo->query("SELECT 1 FROM `products` LIMIT 1");
+        return;
+    } catch (Throwable $e) {
+        // Table 'products' does not exist yet; auto-initialize schema
+    }
+
+    $schemaFile = __DIR__ . '/database.sql';
+    if (!file_exists($schemaFile)) {
+        return;
+    }
+
+    $content = file_get_contents($schemaFile);
+    $lines = preg_split('/\r\n|\r|\n/', $content);
+    $cleanLines = [];
+    foreach ($lines as $line) {
+        $trimmed = trim($line);
+        if ($trimmed === '' || strpos($trimmed, '--') === 0 || strpos($trimmed, '/*') === 0) {
+            continue;
+        }
+        if (stripos($trimmed, 'CREATE DATABASE') === 0 || stripos($trimmed, 'USE ') === 0) {
+            continue;
+        }
+        $cleanLines[] = $line;
+    }
+
+    $statements = array_filter(array_map('trim', explode(';', implode("\n", $cleanLines))));
+    foreach ($statements as $stmt) {
+        if ($stmt !== '') {
+            try {
+                $pdo->exec($stmt);
+            } catch (Throwable $stmtErr) {
+                error_log("Database schema auto-init warning: " . $stmtErr->getMessage());
+            }
+        }
+    }
+}
+
 function get_db(): PDO {
     static $pdo = null;
     if ($pdo === null) {
@@ -86,6 +125,7 @@ function get_db(): PDO {
             $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
         }
         $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+        ensure_database_schema($pdo);
     }
     return $pdo;
 }

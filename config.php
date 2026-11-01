@@ -26,11 +26,11 @@ $cloudDbUrl = getenv('DATABASE_URL') ?: getenv('MYSQL_URL');
 if ($cloudDbUrl && strpos($cloudDbUrl, '://') !== false) {
     $parsedUrl = parse_url($cloudDbUrl);
     if (!empty($parsedUrl['host'])) {
-        if (!getenv('DB_HOST')) putenv('DB_HOST=' . $parsedUrl['host']);
-        if (!empty($parsedUrl['port']) && !getenv('DB_PORT')) putenv('DB_PORT=' . $parsedUrl['port']);
-        if (!empty($parsedUrl['user']) && !getenv('DB_USER')) putenv('DB_USER=' . $parsedUrl['user']);
-        if (isset($parsedUrl['pass']) && getenv('DB_PASS') === false) putenv('DB_PASS=' . $parsedUrl['pass']);
-        if (!empty($parsedUrl['path']) && !getenv('DB_NAME')) putenv('DB_NAME=' . ltrim($parsedUrl['path'], '/'));
+        if (!getenv('DB_HOST')) { putenv('DB_HOST=' . $parsedUrl['host']); $_ENV['DB_HOST'] = $parsedUrl['host']; }
+        if (!empty($parsedUrl['port']) && !getenv('DB_PORT')) { putenv('DB_PORT=' . $parsedUrl['port']); $_ENV['DB_PORT'] = (string)$parsedUrl['port']; }
+        if (!empty($parsedUrl['user']) && !getenv('DB_USER')) { $user = urldecode($parsedUrl['user']); putenv('DB_USER=' . $user); $_ENV['DB_USER'] = $user; }
+        if (isset($parsedUrl['pass']) && getenv('DB_PASS') === false) { $pass = urldecode($parsedUrl['pass']); putenv('DB_PASS=' . $pass); $_ENV['DB_PASS'] = $pass; }
+        if (!empty($parsedUrl['path']) && !getenv('DB_NAME')) { $db = ltrim($parsedUrl['path'], '/'); putenv('DB_NAME=' . $db); $_ENV['DB_NAME'] = $db; }
     }
 }
 

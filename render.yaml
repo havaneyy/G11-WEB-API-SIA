@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: codecraft-shop
+    runtime: docker
+    plan: free
+    region: singapore
+    buildCommand: ""
+    startCommand: ""
+    envVars:
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: 3306
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: PAYMONGO_SECRET_KEY
+        sync: false
+      - key: PAYMONGO_PUBLIC_KEY
+        sync: false
+      - key: APP_BASE_URL
+        sync: false
+

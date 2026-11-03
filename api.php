@@ -210,6 +210,13 @@ try {
                 json_response(['error' => 'Display name and email cannot be empty.'], 400);
             }
 
+            // If avatar_url was empty, preserve the existing avatar
+            if ($avatarUrl === '') {
+                $existingAvatarStmt = $db->prepare("SELECT avatar_url FROM users WHERE id = ?");
+                $existingAvatarStmt->execute([$userId]);
+                $avatarUrl = $existingAvatarStmt->fetchColumn() ?: DEFAULT_AVATAR_URL;
+            }
+
             // Check if email taken by someone else
             $check = $db->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
             $check->execute([$email, $userId]);
@@ -222,6 +229,7 @@ try {
             );
             $stmt->execute([$displayName, $email, $phone, $bio, $location, $avatarUrl, $optInMarketing, $userId]);
             $_SESSION['display_name'] = $displayName;
+            $_SESSION['avatar_url'] = $avatarUrl;
 
             json_response([
                 'success' => true,
@@ -243,21 +251,29 @@ try {
             $userId = require_auth_user();
             $avatarUrl = trim($_POST['avatar_url'] ?? '');
 
-            if (isset($_FILES['avatar_image']) && $_FILES['avatar_image']['error'] === UPLOAD_ERR_OK) {
-                $file = $_FILES['avatar_image'];
-                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-                if (!in_array($ext, $allowed)) {
-                    json_response(['error' => 'Invalid image format. Allowed formats: JPG, PNG, WEBP, GIF.'], 400);
+            if (isset($_FILES['avatar_image']) && !empty($_FILES['avatar_image']['name'])) {
+                if ($_FILES['avatar_image']['error'] === UPLOAD_ERR_OK) {
+                    $file = $_FILES['avatar_image'];
+                    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                    $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+                    if (!in_array($ext, $allowed)) {
+                        json_response(['error' => 'Invalid image format. Allowed formats: JPG, PNG, WEBP, GIF.'], 400);
+                    }
+                    $uploadsDir = __DIR__ . '/uploads';
+                    if (!is_dir($uploadsDir)) {
+                        @mkdir($uploadsDir, 0777, true);
+                    }
+                    $filename = 'avatar_' . $userId . '_' . time() . '.' . $ext;
+                    $dest = $uploadsDir . '/' . $filename;
+                    if (!move_uploaded_file($file['tmp_name'], $dest)) {
+                        json_response(['error' => 'Failed to save uploaded avatar. Please check file permissions.'], 500);
+                    }
+                    $avatarUrl = 'uploads/' . $filename;
+                } elseif ($_FILES['avatar_image']['error'] === UPLOAD_ERR_INI_SIZE || $_FILES['avatar_image']['error'] === UPLOAD_ERR_FORM_SIZE) {
+                    json_response(['error' => 'The selected photo is too large. Please select an image under 10MB.'], 400);
+                } else {
+                    json_response(['error' => 'Upload failed (error code ' . $_FILES['avatar_image']['error'] . '). Please try again.'], 400);
                 }
-                $uploadsDir = __DIR__ . '/uploads';
-                if (!is_dir($uploadsDir)) mkdir($uploadsDir, 0777, true);
-                $filename = 'avatar_' . $userId . '_' . time() . '.' . $ext;
-                $dest = $uploadsDir . '/' . $filename;
-                if (!move_uploaded_file($file['tmp_name'], $dest)) {
-                    json_response(['error' => 'Failed to save uploaded avatar.'], 500);
-                }
-                $avatarUrl = 'uploads/' . $filename;
             }
 
             if (empty($avatarUrl)) {
@@ -266,6 +282,7 @@ try {
 
             $stmt = $db->prepare("UPDATE users SET avatar_url = ? WHERE id = ?");
             $stmt->execute([$avatarUrl, $userId]);
+            $_SESSION['avatar_url'] = $avatarUrl;
 
             json_response([
                 'success' => true,

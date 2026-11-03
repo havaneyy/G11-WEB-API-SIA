@@ -9,6 +9,11 @@ RUN a2enmod rewrite
 # Enable .htaccess overrides in Apache directory config
 RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
 
+# Configure PHP upload limits (10MB for avatars and craft photos)
+RUN echo "upload_max_filesize = 10M" > /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "post_max_size = 12M" >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "memory_limit = 128M" >> /usr/local/etc/php/conf.d/uploads.ini
+
 # Set working directory
 WORKDIR /var/www/html
 

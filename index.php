@@ -3565,10 +3565,45 @@ while ($r = $pStmt->fetch()) {
         function previewAvatarFromFile(e) {
             const file = e.target.files[0];
             if (!file) return;
-            selectedAvatarFile = file;
+
+            // Display loading indicator in preview
+            const preview = document.getElementById('avatarModalPreview');
             const reader = new FileReader();
+
             reader.onload = function(evt) {
-                document.getElementById('avatarModalPreview').src = evt.target.result;
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const maxDim = 500;
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) {
+                        if (width > maxDim) {
+                            height = Math.round((height * maxDim) / width);
+                            width = maxDim;
+                        }
+                    } else {
+                        if (height > maxDim) {
+                            width = Math.round((width * maxDim) / height);
+                            height = maxDim;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    canvas.toBlob(function(blob) {
+                        if (blob) {
+                            selectedAvatarFile = new File([blob], 'avatar_' + Date.now() + '.jpg', { type: 'image/jpeg' });
+                            preview.src = canvas.toDataURL('image/jpeg', 0.85);
+                        } else {
+                            selectedAvatarFile = file;
+                            preview.src = evt.target.result;
+                        }
+                    }, 'image/jpeg', 0.85);
+                };
+                img.src = evt.target.result;
             };
             reader.readAsDataURL(file);
         }
@@ -3590,6 +3625,13 @@ while ($r = $pStmt->fetch()) {
             const statusDiv = document.getElementById('avatarUpdateStatus');
             const saveBtn = document.getElementById('saveAvatarBtn');
 
+            if (currentAvatarMode === 'device' && !selectedAvatarFile) {
+                statusDiv.className = "p-2.5 rounded-xl text-xs font-semibold text-center bg-amber-50 text-amber-700 border border-amber-200";
+                statusDiv.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> Please choose an image file from your device first.`;
+                statusDiv.classList.remove('hidden');
+                return;
+            }
+
             statusDiv.className = "p-2.5 rounded-xl text-xs font-semibold text-center bg-blue-50 text-blue-700 border border-blue-200";
             statusDiv.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Updating profile picture...`;
             statusDiv.classList.remove('hidden');
@@ -3600,7 +3642,14 @@ while ($r = $pStmt->fetch()) {
                 fd.append('avatar_image', selectedAvatarFile);
             } else {
                 const url = document.getElementById('avatarUrlInput').value.trim();
-                fd.append('avatar_url', url || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsYYYmIOuieWvw2LUapfA7Catq3e-NyzpWMPjVoZ32pQ&s=10');
+                if (!url) {
+                    statusDiv.className = "p-2.5 rounded-xl text-xs font-semibold text-center bg-amber-50 text-amber-700 border border-amber-200";
+                    statusDiv.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> Please enter an image web address or choose a photo.`;
+                    statusDiv.classList.remove('hidden');
+                    saveBtn.disabled = false;
+                    return;
+                }
+                fd.append('avatar_url', url);
             }
 
             try {
@@ -3611,10 +3660,15 @@ while ($r = $pStmt->fetch()) {
                     statusDiv.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> ${data.message}`;
                     
                     currentUser.avatar_url = data.avatar_url;
-                    document.getElementById('accSidebarAvatar').src = data.avatar_url;
-                    document.getElementById('setAvatarUrl').value = data.avatar_url;
+                    const accAvatar = document.getElementById('accSidebarAvatar');
+                    if (accAvatar) accAvatar.src = data.avatar_url;
+                    const setInput = document.getElementById('setAvatarUrl');
+                    if (setInput) setInput.value = data.avatar_url;
                     const previewElem = document.getElementById('setAvatarPreview');
                     if (previewElem) previewElem.src = data.avatar_url;
+                    
+                    // Update header/nav avatars as well
+                    document.querySelectorAll('img[alt="Avatar"]').forEach(el => el.src = data.avatar_url);
                     updateAuthUI();
 
                     setTimeout(() => {

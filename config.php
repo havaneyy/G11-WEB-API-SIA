@@ -108,6 +108,11 @@ function ensure_database_schema(PDO $pdo): void {
             }
         }
     }
+
+    // Ensure avatar_url column is TEXT so it never truncates long URLs
+    try {
+        $pdo->exec("ALTER TABLE `users` MODIFY COLUMN `avatar_url` TEXT");
+    } catch (Throwable $e) {}
 }
 
 function get_db(): PDO {

@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../config.php';
-unset($_SESSION['codecraft_admin']);
-session_regenerate_id(true);
+$_SESSION = [];
+if (session_id()) {
+    session_destroy();
+}
 header('Location: login.php');
 exit;

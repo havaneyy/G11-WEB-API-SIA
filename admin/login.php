@@ -6,6 +6,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (hash_equals('admin123', (string)($_POST['password'] ?? ''))) {
         session_regenerate_id(true);
         $_SESSION['codecraft_admin'] = true;
+
+        // Explicitly bind session to the Admin user account in MySQL
+        try {
+            $db = get_db();
+            $adminStmt = $db->query("SELECT * FROM users WHERE role = 'admin' OR username = 'admin' ORDER BY id ASC LIMIT 1");
+            $adminUser = $adminStmt->fetch();
+            if ($adminUser) {
+                $_SESSION['user_id'] = (int)$adminUser['id'];
+                $_SESSION['username'] = $adminUser['username'];
+                $_SESSION['display_name'] = $adminUser['display_name'];
+                $_SESSION['role'] = 'admin';
+                $_SESSION['avatar_url'] = $adminUser['avatar_url'];
+            }
+        } catch (Throwable $e) {}
+
         header('Location: products.php');
         exit;
     }

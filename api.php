@@ -962,8 +962,14 @@ try {
                 if ($isAdmin) {
                     $stmt = $db->query("SELECT * FROM orders ORDER BY id DESC LIMIT 50");
                 } else {
-                    $stmt = $db->prepare("SELECT * FROM orders WHERE buyer_id = ? OR seller_id = ? OR user_id = ? ORDER BY id DESC LIMIT 50");
-                    $stmt->execute([$userId, $userId, $userId]);
+                    try {
+                        $stmt = $db->prepare("SELECT * FROM orders WHERE buyer_id = ? OR seller_id = ? ORDER BY id DESC LIMIT 50");
+                        $stmt->execute([$userId, $userId]);
+                    } catch (Throwable $e) {
+                        // Fallback in case a legacy database schema used user_id
+                        $stmt = $db->prepare("SELECT * FROM orders WHERE user_id = ? ORDER BY id DESC LIMIT 50");
+                        $stmt->execute([$userId]);
+                    }
                 }
             } else {
                 $stmt = $db->query("SELECT * FROM orders ORDER BY id DESC LIMIT 50");
